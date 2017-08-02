@@ -1,5 +1,5 @@
-from MeshGenerator import MeshGenerator
-from pylab         import *
+from gmsh_meshgenerator import MeshGenerator
+from pylab              import *
 
 msh_name = 'cylinder_mesh'
 out_dir  = 'meshes/'

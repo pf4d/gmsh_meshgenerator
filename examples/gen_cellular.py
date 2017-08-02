@@ -1,5 +1,5 @@
-from MeshGenerator import MeshGenerator
-from pylab         import *
+from gmsh_meshgenerator import MeshGenerator
+from pylab              import *
 
 msh_name = 'cellular_mesh'                # name of all outputs
 out_dir  = 'meshes/'                      # directory for all outputs
