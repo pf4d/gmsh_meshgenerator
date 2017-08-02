@@ -48,11 +48,15 @@ m.write_gmsh_contour(lc=0.1, boundary_extend=False)
 # get the number of contours for the mesh :
 num_ctrs = m.num_contours()
 
-# add identical edge attractors to all contours with sequential identifier :
+# add identical edge attractors to all contours with sequential identifier.
+# the parameter "NNodesByEdge" adds extra nodes to the edge for the purpose
+# of refinement, increase this if your edges are much longer than your 
+# cell refinement "lcMin" set by m.add_threshold() below :
 for i in range(num_ctrs):
   m.add_edge_attractor(field=i, contour_index=i, NNodesByEdge=10)
 
-# for each edge attractor, add a threshold for mesh refinement in the area :
+# for each edge attractor, add a threshold for mesh refinement in the vicinity 
+# of the edge :
 for i in range(num_ctrs):
   # parameters are respectively: field, ifield, lcMin, lcMax, distMin, distMax
   m.add_threshold(num_ctrs+i, i, 0.001, 0.1, 0, 0.25)
