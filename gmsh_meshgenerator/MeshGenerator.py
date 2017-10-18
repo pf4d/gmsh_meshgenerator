@@ -77,7 +77,7 @@ class MeshGenerator(object):
     self.loop_a      = []  # list of loop-list strings
     self.dim         = 2   # default to 2D mesh
 
-  def create_contour(self, var, zero_cntr, skip_pts, distance_check):
+  def create_contour(self, var, zero_cntr, skip_pts, distance_check, min_nodes):
     """
     Create a contour of the data field with index <var> of <dd> provided at
     initialization.  <zero_cntr> is the value of <var> to contour, <skip_pts>
@@ -101,7 +101,11 @@ class MeshGenerator(object):
       print_text(s % shape(c)[0], self.color)
       cont = self.remove_skip_points(c, skip_pts)
       cont = self.eliminate_intersections(cont, distance_check)
-      self.contourlist.append(cont)
+      if len(cont) < min_nodes:
+        s    = "    - contour has less than %s nodes, removing -"
+        print_text(s % min_nodes, 'red')
+      else:
+        self.contourlist.append(cont)
 
   def num_contours(self):
     """
@@ -130,7 +134,7 @@ class MeshGenerator(object):
     print_text(s % shape(cont_array)[0], self.color)
     self.contourlist.append(cont_array)
 
-  def plot_contour(self):
+  def plot_contour(self, legend=True):
     """
     Plot the contour created with the "create_contour" method.
     """
@@ -147,9 +151,10 @@ class MeshGenerator(object):
     
     ax.set_aspect('equal')
     ax.set_title("contour")
-    leg = ax.legend(bbox_to_anchor=(1.2,0.5), loc='center right', ncol=1)
-    leg.get_frame().set_alpha(0.0)
-    leg.get_frame().set_color('w')
+    if legend:
+      leg = ax.legend(bbox_to_anchor=(1.2,0.5), loc='center right', ncol=1)
+      leg.get_frame().set_alpha(0.0)
+      leg.get_frame().set_color('w')
     
     plt.tight_layout(rect=[0.005,0.01,0.88,0.995])
     show()
