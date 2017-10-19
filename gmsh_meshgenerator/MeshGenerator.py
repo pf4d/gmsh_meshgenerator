@@ -73,7 +73,7 @@ class MeshGenerator(object):
       os.makedirs(direc)
     self.f           = open(direc + fn + '.geo', 'w')
     self.fieldList   = []  # list of field indexes created.
-    self.contourlist = []  # list of contours
+    self.contourList = []  # list of contours
     self.loop_a      = []  # list of loop-list strings
     self.dim         = 2   # default to 2D mesh
 
@@ -105,13 +105,13 @@ class MeshGenerator(object):
         s    = "    - contour has less than %s nodes, removing -"
         print_text(s % min_nodes, 'red')
       else:
-        self.contourlist.append(cont)
+        self.contourList.append(cont)
 
   def num_contours(self):
     """
     Return the integer number of contours for this mesh.
     """
-    return len(self.contourlist)
+    return len(self.contourList)
 
   def remove_skip_points(self, contour, skip_pts):
     """
@@ -132,7 +132,7 @@ class MeshGenerator(object):
     """
     s = "::: manually setting contour with %s nodes:::"
     print_text(s % shape(cont_array)[0], self.color)
-    self.contourlist.append(cont_array)
+    self.contourList.append(cont_array)
 
   def plot_contour(self, legend=True):
     """
@@ -145,8 +145,8 @@ class MeshGenerator(object):
     fig  = figure()
     ax   = fig.add_subplot(111)
     
-    colors = [cmap(x) for x in np.linspace(0,1,len(self.contourlist))]
-    for i,(cnt, col) in enumerate(zip(self.contourlist, colors)):
+    colors = [cmap(x) for x in np.linspace(0,1,len(self.contourList))]
+    for i,(cnt, col) in enumerate(zip(self.contourList, colors)):
       ax.plot(cnt[:,0], cnt[:,1], '-', color=col, lw = 3.0, label=i)
     
     ax.set_aspect('equal')
@@ -242,7 +242,7 @@ class MeshGenerator(object):
 
     ctr  = 0
     lp_a = []
-    for j,c in enumerate(self.contourlist):
+    for j,c in enumerate(self.contourList):
       
       pts = size(c[:,0])
       
@@ -387,8 +387,8 @@ class MeshGenerator(object):
     print_text(s % dist, self.color)
     lin_dist = lambda p1, p2: sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
-    new_contourlist = []
-    for coords in self.contourlist:
+    new_contourList = []
+    for coords in self.contourList:
       mask = ones(len(coords), dtype=bool)
 
       i = 0
@@ -408,28 +408,32 @@ class MeshGenerator(object):
         mask[i] = 0
         i -= 1
 
-      new_contourlist.append(coords[mask])
+      new_contourList.append(coords[mask])
 
       # print results
       s    = "    - removed %i points closer than %f to one another -"
       print_text(s % (len(mask) - sum(mask), dist), self.color)
 
-
-    self.longest_cont = new_contourlist
+    self.longest_cont = new_contourList
 
   def intersection(self, new_contour):
     """
     Take the geometric intersection of current coordinates with <new_contour>.
     """
+    # convert the contour coordinates to a shapely::Polygon :
     p2 = Polygon(zip(new_contour[:,0], new_contour[:,1]))
-      
-    exterior = zip(self.contourlist[0][:,0], self.contourlist[0][:,1])
 
-    if len(self.contourlist) > 1:
+    # the exterior contour is always the first :      
+    exterior = zip(self.contourList[0][:,0], self.contourList[0][:,1])
+
+    # if there are multiple contours defined, the remaining are interior :
+    if len(self.contourList) > 1:
       interior = []
-      for c in self.contourlist[1:]:
+      for c in self.contourList[1:]:
         interior.append(zip(c[:,0], c[:,1]))
       p1 = Polygon(exterior, interior)
+
+    # otherwise, there is only one contour :
     else:
       p1 = Polygon(exterior)
   
@@ -443,16 +447,59 @@ class MeshGenerator(object):
     print_text(s % shape(exterior)[0], self.color)
 
     # create a new list of contours from the intersection and its interior :
-    self.contourlist = [exterior]
+    self.contourList = [exterior]
     interiors        = []
     for interior in p3.interiors:
       int_contour = array(zip(interior.xy[:][0], interior.xy[:][1]))[1:]
-      self.contourlist.append(int_contour)
+      self.contourList.append(int_contour)
     
       s    = "    - interior contour, length %s nodes -"
       print_text(s % shape(interior)[0], self.color)
-        
 
+  def generate_polygon_list(self):
+    """
+    Create and return a list of shapely::Polygon 
+    objects from ``self.contourList``.
+    """
+    polygonList = []
+    for i in range(len(self.contourList)):
+      pi = Polygon(zip(self.contourList[i][:,0], self.contourList[i][:,1]))
+      polygonList.append(pi) 
+    return polygonList
+
+  def remove_overlapping_contours(self):
+    """
+    Check each contour of ``self.contourList`` for overlaps; if two contours 
+    overlap, replace the separate contours with their intersection.
+    """
+    s    = "::: removing overlapping contours (%i total contours) :::"
+    print_text(s % len(self.contourList), self.color)
+    
+    # convert the list of contours to polygons
+    polygonList = self.generate_polygon_list()
+
+    # compare each contour 'i' to every other contour 'j' :
+    for i in range(len(polygonList)-1):
+      # iterate through the remaining contours :
+      if polygonList[i] is not None:
+        for j in range(i+1, len(polygonList)):
+          # if polygons 'i' and 'j' intersect, replace polygon 'i' with 
+          # the intersection and remove polygon 'j' :
+          if polygonList[j] is not None: 
+            if         polygonList[i].intersects(polygonList[j]) \
+               and not polygonList[i].within(polygonList[j]) \
+               and not polygonList[j].within(polygonList[i]) :
+              s    = "    - found intersection, creating unification -"
+              print_text(s, 'red')
+              polygonList[i] = polygonList[i].union(polygonList[j])
+              polygonList[j] = None
+
+    # create a new list of contours from the intersections :
+    self.contourList = []
+    for p in polygonList:
+      if p is not None:
+        self.contourList.append(array(zip(p.exterior.xy[:][0],
+                                          p.exterior.xy[:][1]))[1:])
 
   def extend_edge(self, r):
     """
