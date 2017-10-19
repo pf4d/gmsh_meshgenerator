@@ -467,12 +467,12 @@ class MeshGenerator(object):
       polygonList.append(pi) 
     return polygonList
 
-  def remove_overlapping_contours(self):
+  def unify_overlapping_contours(self):
     """
     Check each contour of ``self.contourList`` for overlaps; if two contours 
-    overlap, replace the separate contours with their intersection.
+    overlap, replace the separate contours with their geometric union.
     """
-    s    = "::: removing overlapping contours (%i total contours) :::"
+    s    = "::: unifying overlapping contours (%i total contours) :::"
     print_text(s % len(self.contourList), self.color)
     
     # convert the list of contours to polygons
