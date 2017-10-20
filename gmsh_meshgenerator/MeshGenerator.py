@@ -162,12 +162,20 @@ class MeshGenerator(object):
   def eliminate_intersections(self, contour, dist=10):
     """
     Eliminate intersecting boundary elements. <dist> is an integer specifiying
-    how far forward to look to eliminate intersections.  If any intersections
-    are found, this method is called recursively until none are found.
+    how many indicies forward to look to eliminate intersections.  If an
+    intersection is found, the 
+    If any intersections are found, this method is called recursively 
+    until none are found.
+
+    Intersection code taken from :
+
+       http://bryceboe.com/2006/10/23/line-segment-intersection-algorithm/
+
     """
     s    = "::: eliminating intersections :::"
     print_text(s, self.color)
 
+    # a generic point instance
     class Point:
       def __init__(self,x,y):
         self.x = x
@@ -179,24 +187,33 @@ class MeshGenerator(object):
     def intersect(A,B,C,D):
       return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
 
-    flag = ones(len(contour))
-    intr = False
-    for ii in range(len(contour)-1):
+    def idx(i, n): return i % n
 
-      A = Point(*contour[ii])
-      B = Point(*contour[ii+1])
+    flag = ones(len(contour))    # all indicies are initially good
+    intr = False                 # flag indicating if we should recurse
+    for ii in range(len(contour)):
+        
+      idx_A = ii                 # always less than len(contour)
+      idx_B = idx(ii+1, len(contour))
 
-      for jj in range(ii, min(ii + dist, len(contour)-1)):
+      A = Point(*contour[idx_A])
+      B = Point(*contour[idx_B])
 
-        C = Point(*contour[jj])
-        D = Point(*contour[jj+1])
+      # check 'dist' nodes ahead of node 'ii' for intersections :
+      for jj in range(ii, ii + dist):
 
-        if intersect(A,B,C,D) and ii!=jj+1 and ii+1!=jj:
+        idx_C = idx(jj,   len(contour))
+        idx_D = idx(jj+1, len(contour))
+
+        C = Point(*contour[idx_C])
+        D = Point(*contour[idx_D])
+
+        if intersect(A,B,C,D) and idx_A != idx_D and idx_B != idx_C:
           s    = "    - intersection found between node %i and %i -"
-          print_text(s % (ii+1, jj), 'red')
-          flag[ii+1] = 0
-          flag[jj]   = 0
-          intr       = True
+          print_text(s % (idx_B, idx_C), 'red')
+          flag[idx_B] = 0
+          flag[idx_C] = 0
+          intr        = True
 
     counter  = 0
     new_cont = zeros((int(sum(flag)),2))
