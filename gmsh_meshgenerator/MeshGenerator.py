@@ -77,11 +77,16 @@ class MeshGenerator(object):
     self.loop_a      = []  # list of loop-list strings
     self.dim         = 2   # default to 2D mesh
 
-  def create_contour(self, var, zero_cntr, skip_pts, distance_check, min_nodes):
+  def create_contour(self, var, zero_cntr, skip_pts,
+                     distance_check=10,
+                     min_nodes=3):
     """
-    Create a contour of the data field with index <var> of <dd> provided at
-    initialization.  <zero_cntr> is the value of <var> to contour, <skip_pts>
-    is the number of points to skip in the contour, needed to prevent overlap.
+    Create a contour of the data field with index ``var`` of ``dd`` provided at
+    initialization.  ``zero_cntr`` is the value of ``var`` to contour, 
+    ``skip_pts`` is the number of points to skip in the contour, needed to 
+    prevent overlap.  The parameter ``distance_check`` defines the number of 
+    nodes around each node to check and remove intersecting edges.
+    If a contour is generated with less than ``min_nodes``, it is rejected.
     """
     s    = "::: creating contour skipping %i point(s) :::"
     print_text(s % skip_pts, self.color)

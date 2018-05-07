@@ -21,8 +21,8 @@ m.add_contour(array([[0,0],[0,L],[L,L],[L,0]]))
 # contour is desired.  Parameter "distance_check" is the distance from each node
 # to check for edge intersections which may arise from removing points; 
 # increase the distance if overlaps occur :
-m.create_contour(S, zero_cntr= 0.2, skip_pts=0, distance_check = 10)
-m.create_contour(S, zero_cntr=-0.2, skip_pts=0, distance_check = 10)
+m.create_contour(S, zero_cntr=-0.2, skip_pts=0)
+m.create_contour(S, zero_cntr= 0.2, skip_pts=0)
 
 # plot the resulting contours :
 m.plot_contour()
