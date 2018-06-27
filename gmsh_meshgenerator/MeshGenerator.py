@@ -6,6 +6,10 @@ from colored           import fg, attr
 from shapely.geometry  import Polygon
 from shapely.geometry  import Point as shapelyPoint
 from shapely.ops       import cascaded_union
+from scipy.interpolate import RectBivariateSpline
+from gmshpy            import GModel, GmshSetOption, FlGui
+
+
 
 
 def get_text(text, color='white', atrb=0, cls=None):
@@ -30,6 +34,8 @@ def get_text(text, color='white', atrb=0, cls=None):
   return text
 
 
+
+
 def print_text(text, color='white', atrb=0, cls=None):
   """
   Print text ``text`` from calling class ``cls`` to the screen.
@@ -50,6 +56,7 @@ def print_text(text, color='white', atrb=0, cls=None):
   else:
     text = ('%s' + text + '%s') % (fg(color), attr(0))
   print text
+
 
 
 
@@ -571,6 +578,8 @@ class MeshGenerator(object):
     mesh_file.write(mesh)
 
 
+
+
 class linear_attractor(object):
   r"""
   Create an attractor object which refines with min and max cell radius 
@@ -648,6 +657,9 @@ class linear_attractor(object):
         lc = l_max
     return lc
 
+
+
+
 class static_attractor(object):
   """
   """
@@ -669,8 +681,12 @@ class static_attractor(object):
     if not self.inv:
       lc = self.c * self.spline(x,y)[0][0]
     else:
-      lc = self.c * 1/self.spline(x,y)[0][0]
+      lc = self.c * 1 / (self.spline(x,y)[0][0] + 1e-16)
+    if lc < 1e-16:  lc = 1e-16
+    if lc > 1e16:   lc = 1e16
     return lc
+
+
 
 
 class min_field(object):
@@ -687,6 +703,8 @@ class min_field(object):
     return min(l)
 
 
+
+
 class max_field(object):
   """
   Return the minimum of a list of attactor operator fields <f_list>.
@@ -701,21 +719,21 @@ class max_field(object):
     return max(l)
 
 
+
+
 class MeshRefiner(object):
 
-  def __init__(self, di, fn, gmsh_file_name):
+  def __init__(self, x, y, field, gmsh_file_name):
     """
     Creates a 2D or 3D mesh based on contour .geo file <gmsh_file_name>.
-    Refinements are done on DataInput object <di> with data field index <fn>.
     """
     self.color = '43'
     s    = "::: initializing MeshRefiner on \"%s.geo\" :::" % gmsh_file_name
     print_text(s, self.color)
 
-    self.field  = di.data[fn].T
-    print_min_max(self.field, 'refinement field [m]')
+    self.field  = field
 
-    self.spline = RectBivariateSpline(di.x, di.y, self.field, kx=1, ky=1)
+    self.spline = RectBivariateSpline(x, y, self.field, kx=1, ky=1)
 
     #load the mesh into a GModel
     self.m = GModel.current()
